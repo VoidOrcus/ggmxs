@@ -1,5 +1,5 @@
 -- ==============================================================================
--- zZz Hub v4.0 | Premium Dual-Column UI
+-- zZz Hub v4.1 | Premium Dual-Column UI (FIXED)
 -- Design fiel ao Mockup | Integrado com Color Pickers
 -- ==============================================================================
 
@@ -20,7 +20,7 @@ local Theme = {
     Sidebar = Color3.fromRGB(18, 14, 28),
     Element = Color3.fromRGB(30, 24, 45),
     Hover = Color3.fromRGB(45, 35, 65),
-    Accent = Color3.fromRGB(138, 43, 226), -- Roxo principal
+    Accent = Color3.fromRGB(138, 43, 226), 
     Text = Color3.fromRGB(245, 245, 255),
     TextSub = Color3.fromRGB(150, 140, 170),
     Border = Color3.fromRGB(45, 35, 65)
@@ -77,7 +77,6 @@ function zZz:CreateWindow(config)
 
     local ScreenGui = Create("ScreenGui", { Name = "zZz_PremiumHub", Parent = gethui and gethui() or CoreGui, ResetOnSpawn = false, DisplayOrder = 999 })
 
-    -- ── BOLHA MOBILE ──
     local Bubble = Create("ImageButton", {
         Parent = ScreenGui, Size = UDim2.new(0, 50, 0, 50), Position = UDim2.new(0.5, -25, 0, 20),
         BackgroundColor3 = Theme.Sidebar, Visible = false, ClipsDescendants = true, AutoButtonColor = false
@@ -87,7 +86,6 @@ function zZz:CreateWindow(config)
     Create("ImageLabel", { Parent = Bubble, Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(0.5, -15, 0.5, -15), BackgroundTransparency = 1, Image = zZz.Icons.Logo, ImageColor3 = Theme.Accent })
     MakeDraggable(Bubble, Bubble)
 
-    -- ── JANELA PRINCIPAL ──
     local Main = Create("Frame", {
         Parent = ScreenGui, Size = UDim2.new(0, 700, 0, 460), Position = UDim2.new(0.5, -350, 0.5, -230),
         BackgroundColor3 = Theme.BgMain, ClipsDescendants = true
@@ -95,13 +93,11 @@ function zZz:CreateWindow(config)
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = Main })
     Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = Main })
     
-    -- Fundo de Estrelas (Sutil)
     Create("ImageLabel", {
         Parent = Main, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
         Image = "rbxassetid://16946059154", ImageTransparency = 0.88, ImageColor3 = Theme.Accent, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.new(0, 300, 0, 300)
     })
 
-    -- ── SIDEBAR ──
     local Sidebar = Create("Frame", { Parent = Main, Size = UDim2.new(0, 65, 1, 0), BackgroundColor3 = Theme.Sidebar, BorderSizePixel = 0, ZIndex = 2 })
     Create("Frame", { Parent = Sidebar, Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BackgroundColor3 = Theme.Border, BorderSizePixel = 0, ZIndex = 2 })
     
@@ -115,7 +111,6 @@ function zZz:CreateWindow(config)
     local ActiveIndicator = Create("Frame", { Parent = Sidebar, Size = UDim2.new(0, 3, 0, 0), Position = UDim2.new(0, 0, 0, 0), BackgroundColor3 = Theme.Accent, BorderSizePixel = 0, ZIndex = 3 })
     Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ActiveIndicator })
 
-    -- ── CONTEÚDO E TOPBAR ──
     local ContentArea = Create("Frame", { Parent = Main, Size = UDim2.new(1, -65, 1, 0), Position = UDim2.new(0, 65, 0, 0), BackgroundTransparency = 1, ZIndex = 2 })
     local Topbar = Create("Frame", { Parent = ContentArea, Size = UDim2.new(1, 0, 0, 50), BackgroundTransparency = 1 })
     MakeDraggable(Topbar, Main)
@@ -139,9 +134,10 @@ function zZz:CreateWindow(config)
         Tween(Main, {Size = UDim2.new(0, 700, 0, 460), BackgroundTransparency = 0}, 0.3)
     end)
 
+    local currentHideKey = HideKey
     UIS.InputBegan:Connect(function(input, gp)
         if gp then return end
-        if input.KeyCode == config.HideKey then Main.Visible = not Main.Visible; Bubble.Visible = false end
+        if input.KeyCode == currentHideKey then Main.Visible = not Main.Visible; Bubble.Visible = false end
     end)
 
     local PageFolder = Create("Frame", { Parent = ContentArea, Size = UDim2.new(1, -30, 1, -60), Position = UDim2.new(0, 15, 0, 50), BackgroundTransparency = 1 })
@@ -203,13 +199,9 @@ function zZz:CreateWindow(config)
     BindCPSlider(RBtn, RTrk, "R"); BindCPSlider(GBtn, GTrk, "G"); BindCPSlider(BBtn, BTrk, "B")
 
     local function OpenColorPicker(flag, startColor)
-        CP_TargetFlag = flag
-        CP_CurrentColor = startColor
-        UpdateCP()
-        ColorPickerPopup.Visible = true
+        CP_TargetFlag = flag; CP_CurrentColor = startColor; UpdateCP(); ColorPickerPopup.Visible = true
     end
 
-    -- ── OBJETOS DA WINDOW ──
     local WindowObj = { Tabs = {}, CurrentTab = nil }
 
     WindowObj.SaveConfig = function(name)
@@ -246,7 +238,6 @@ function zZz:CreateWindow(config)
         local iconToUse = zZz.Icons[iconId] or iconId or zZz.Icons.Config
         local TabBtn = Create("ImageButton", { Parent = TabContainer, Size = UDim2.new(0, 42, 0, 42), BackgroundTransparency = 1, Image = iconToUse, ImageColor3 = Theme.TextMuted, AutoButtonColor = false })
         
-        -- Layout de Duas Colunas
         local Page = Create("Frame", { Parent = PageFolder, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Visible = false })
         local LeftCol = Create("ScrollingFrame", { Parent = Page, Size = UDim2.new(0.5, -5, 1, 0), Position = UDim2.new(0,0,0,0), BackgroundTransparency = 1, ScrollBarThickness = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0) })
         local RightCol = Create("ScrollingFrame", { Parent = Page, Size = UDim2.new(0.5, -5, 1, 0), Position = UDim2.new(0.5, 5, 0, 0), BackgroundTransparency = 1, ScrollBarThickness = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0) })
@@ -267,8 +258,7 @@ function zZz:CreateWindow(config)
             Tween(PageTitle, {TextTransparency = 1, Position = UDim2.new(0, 25, 0, -5)}, 0.15).Completed:Connect(function() 
                 PageTitle.Text = name; Tween(PageTitle, {TextTransparency = 0, Position = UDim2.new(0, 25, 0, 0)}, 0.15) 
             end)
-            WindowObj.CurrentTab = name
-            ColorPickerPopup.Visible = false -- Fecha popups ao trocar de aba
+            WindowObj.CurrentTab = name; ColorPickerPopup.Visible = false
         end)
 
         if not WindowObj.CurrentTab then
@@ -279,7 +269,7 @@ function zZz:CreateWindow(config)
         local TabObj = {Page = Page, Btn = TabBtn}
         table.insert(WindowObj.Tabs, TabObj)
         
-        -- ── SEÇÕES (CARDS DO DESENHO) ──
+        -- ── CRIAÇÃO DOS CARDS (SECTION) ──
         function TabObj:CreateSection(secName, side)
             local targetCol = (side and side:lower() == "right") and RightCol or LeftCol
             
@@ -287,32 +277,87 @@ function zZz:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = SecCard })
             Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = SecCard })
             
-            -- Título do Card
             Create("TextLabel", { Parent = SecCard, Position = UDim2.new(0, 15, 0, 10), Size = UDim2.new(1, -30, 0, 16), BackgroundTransparency = 1, Text = secName, TextColor3 = Theme.Accent, Font = Fonts.Header, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left })
             Create("Frame", { Parent = SecCard, Size = UDim2.new(1, -30, 0, 1), Position = UDim2.new(0, 15, 0, 32), BackgroundColor3 = Theme.Border, BorderSizePixel = 0 })
 
             local SecLayout = Create("UIListLayout", { Parent = SecCard, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder })
             Create("UIPadding", { Parent = SecCard, PaddingTop = UDim.new(0, 40), PaddingBottom = UDim.new(0, 10), PaddingLeft=UDim.new(0,10), PaddingRight=UDim.new(0,10) })
 
-            SecLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                SecCard.Size = UDim2.new(1, 0, 0, SecLayout.AbsoluteContentSize.Y + 50)
-            end)
+            SecLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() SecCard.Size = UDim2.new(1, 0, 0, SecLayout.AbsoluteContentSize.Y + 50) end)
 
             local SecObj = {}
 
-            -- ── TOGGLE C/ COLOR PICKER INTEGRADO ──
+            -- 1. Botão Nativo para Cards
+            function SecObj:CreateButton(text, callback)
+                local BtnBg = Create("Frame", { Parent = SecCard, Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.Element })
+                Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = BtnBg })
+                Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = BtnBg })
+                
+                local Btn = Create("TextButton", { Parent = BtnBg, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12 })
+                Btn.MouseEnter:Connect(function() Tween(BtnBg, {BackgroundColor3 = Theme.Hover}) end)
+                Btn.MouseLeave:Connect(function() Tween(BtnBg, {BackgroundColor3 = Theme.Element}) end)
+                Btn.MouseButton1Click:Connect(function()
+                    local pop = Create("Frame", { Parent = BtnBg, BackgroundColor3 = Theme.Accent, Size = UDim2.fromScale(1,1), BackgroundTransparency = 0.5 })
+                    Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = pop })
+                    Tween(pop, {BackgroundTransparency = 1, Size = UDim2.new(1.05, 0, 1.2, 0), Position = UDim2.new(-0.025, 0, -0.1, 0)}, 0.3).Completed:Connect(function() pop:Destroy() end)
+                    if callback then pcall(callback) end
+                end)
+            end
+
+            -- 2. TextBox Nativo
+            function SecObj:CreateTextBox(config)
+                local name = config.Name or "TextBox"
+                local flag = config.Flag or name
+                local default = config.Default or ""
+                zZz.Flags[flag] = default
+
+                local tbBg = Create("Frame", { Parent = SecCard, Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.BgBase })
+                Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = tbBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = tbBg })
+                local TB = Create("TextBox", { Parent = tbBg, Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = default, TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12, PlaceholderText = name, TextXAlignment = Enum.TextXAlignment.Left })
+                
+                TB.FocusLost:Connect(function() zZz.Flags[flag] = TB.Text end)
+                zZz.UpdateCallbacks[flag] = function(val) TB.Text = val; zZz.Flags[flag] = val end
+            end
+
+            -- 3. Keybind Nativa
+            function SecObj:CreateKeybind(config)
+                local name = config.Name or "Keybind"
+                local flag = config.Flag or name
+                local default = config.Default or Enum.KeyCode.E
+                local callback = config.Callback or function() end
+                zZz.Flags[flag] = default
+
+                local KeyBg = Create("Frame", { Parent = SecCard, Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.Element })
+                Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = KeyBg })
+                Create("TextLabel", { Parent = KeyBg, Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -100, 1, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left })
+                
+                local KeyBtn = Create("TextButton", { Parent = KeyBg, Position = UDim2.new(1, -85, 0.5, -12), Size = UDim2.new(0, 75, 0, 24), BackgroundColor3 = Theme.BgBase, Text = default.Name, TextColor3 = Theme.Accent, Font = Fonts.Header, TextSize = 11 })
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = KeyBtn }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = KeyBtn })
+                
+                local listening = false
+                KeyBtn.MouseButton1Click:Connect(function()
+                    listening = true; KeyBtn.Text = "..."
+                    local conn; conn = UIS.InputBegan:Connect(function(inp)
+                        if inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode ~= Enum.KeyCode.Escape then
+                            zZz.Flags[flag] = inp.KeyCode; KeyBtn.Text = inp.KeyCode.Name
+                            listening = false; conn:Disconnect(); pcall(callback, inp.KeyCode)
+                            if flag == "UI_HideKey" then currentHideKey = inp.KeyCode end
+                        end
+                    end)
+                end)
+                zZz.UpdateCallbacks[flag] = function(val) zZz.Flags[flag] = val; KeyBtn.Text = val.Name; if flag == "UI_HideKey" then currentHideKey = val end end
+            end
+
+            -- 4. Toggle (+ Color Picker opcional)
             function SecObj:CreateToggle(config)
                 local name = config.Name or "Toggle"; local flag = config.Flag or name; local default = config.Default or false
                 local hasColor = config.ColorPicker or false; local colFlag = config.ColorFlag or (flag.."_Color")
-                local defaultCol = config.DefaultColor or Color3.new(1,1,1)
-                local callback = config.Callback or function() end
+                local defaultCol = config.DefaultColor or Color3.new(1,1,1); local callback = config.Callback or function() end
 
-                zZz.Flags[flag] = default
-                if hasColor then zZz.Flags[colFlag] = defaultCol end
+                zZz.Flags[flag] = default; if hasColor then zZz.Flags[colFlag] = defaultCol end
 
                 local TglBg = Create("Frame", { Parent = SecCard, Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.Element })
                 Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TglBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = TglBg })
-                
                 Create("TextLabel", { Parent = TglBg, Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -80, 1, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left })
                 
                 local SwitchBg = Create("Frame", { Parent = TglBg, Position = UDim2.new(1, -45, 0.5, -10), Size = UDim2.new(0, 36, 0, 20), BackgroundColor3 = Theme.BgBase })
@@ -331,31 +376,26 @@ function zZz:CreateWindow(config)
                 zZz.UpdateCallbacks[flag] = SetState
                 Hitbox.MouseButton1Click:Connect(function() SetState(not zZz.Flags[flag]) end)
 
-                -- Se tiver Color Picker embutido (Aquele quadradinho na direita)
                 if hasColor then
-                    SwitchBg.Position = UDim2.new(1, -75, 0.5, -10) -- Empurra o switch
-                    
+                    SwitchBg.Position = UDim2.new(1, -75, 0.5, -10)
                     local CBoxBg = Create("Frame", { Parent = TglBg, Position = UDim2.new(1, -32, 0.5, -10), Size = UDim2.new(0, 22, 0, 20), BackgroundColor3 = defaultCol })
                     Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = CBoxBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = CBoxBg })
                     local CHit = Create("TextButton", { Parent = CBoxBg, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Text = "" })
-                    
                     zZz.UpdateCallbacks[colFlag] = function(c) zZz.Flags[colFlag] = c; Tween(CBoxBg, {BackgroundColor3 = c}) end
                     CHit.MouseButton1Click:Connect(function() OpenColorPicker(colFlag, zZz.Flags[colFlag]) end)
                 end
-
                 SetState(default)
             end
 
+            -- 5. Slider
             function SecObj:CreateSlider(config)
                 local name = config.Name or "Slider"; local flag = config.Flag or name; local min = config.Min or 0; local max = config.Max or 100; local default = config.Default or min; local callback = config.Callback or function() end
                 zZz.Flags[flag] = default
                 
                 local SldBg = Create("Frame", { Parent = SecCard, Size = UDim2.new(1, 0, 0, 50), BackgroundColor3 = Theme.Element })
                 Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SldBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = SldBg })
-                
                 Create("TextLabel", { Parent = SldBg, Position = UDim2.new(0, 12, 0, 6), Size = UDim2.new(1, -60, 0, 15), BackgroundTransparency = 1, Text = name, TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left })
                 local ValLbl = Create("TextLabel", { Parent = SldBg, Position = UDim2.new(1, -50, 0, 6), Size = UDim2.new(0, 38, 0, 15), BackgroundTransparency = 1, Text = tostring(default), TextColor3 = Theme.Accent, Font = Fonts.Header, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right })
-                
                 local Track = Create("Frame", { Parent = SldBg, Position = UDim2.new(0, 12, 0, 30), Size = UDim2.new(1, -24, 0, 6), BackgroundColor3 = Theme.BgBase })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
                 local Fill = Create("Frame", { Parent = Track, Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Theme.Accent })
@@ -366,7 +406,6 @@ function zZz:CreateWindow(config)
                     Tween(Fill, {Size = UDim2.new((val - min) / (max - min), 0, 1, 0)}, 0.1); pcall(callback, val)
                 end
                 zZz.UpdateCallbacks[flag] = SetValue
-
                 local dragging = false
                 Track.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true; SetValue(min + (max - min) * math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)) end end)
                 UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
@@ -381,39 +420,14 @@ function zZz:CreateWindow(config)
 
     -- ── ABA DE CONFIGURAÇÕES NATIVA ──
     local ConfigTab = WindowObj:CreateTab("Config", "Config") 
+    
     local SysSec = ConfigTab:CreateSection("System Settings", "Left")
-    
-    local KeyBg = Create("Frame", { Parent = SysSec.Card, Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.Element, Parent = SysSec.Card.Parent }) -- Hack rápido pro layout
-    KeyBg.Parent = SysSec:CreateToggle({Name = "UI Keybind Dummy"}).Parent.Parent -- Injetando
-    KeyBg:ClearAllChildren(); Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = KeyBg })
-    Create("TextLabel", { Parent = KeyBg, Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -100, 1, 0), BackgroundTransparency = 1, Text = "Hide UI Key", TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left })
-    local KeyBtn = Create("TextButton", { Parent = KeyBg, Position = UDim2.new(1, -80, 0.5, -12), Size = UDim2.new(0, 68, 0, 24), BackgroundColor3 = Theme.BgBase, Text = currentHideKey.Name, TextColor3 = Theme.Accent, Font = Fonts.Header, TextSize = 11 })
-    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = KeyBtn }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = KeyBtn })
-    
-    local listening = false
-    KeyBtn.MouseButton1Click:Connect(function()
-        listening = true; KeyBtn.Text = "..."
-        local conn; conn = UIS.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode ~= Enum.KeyCode.Escape then
-                currentHideKey = inp.KeyCode; KeyBtn.Text = currentHideKey.Name
-                listening = false; conn:Disconnect()
-            end
-        end)
-    end)
+    SysSec:CreateKeybind({ Name = "Hide UI Key", Flag = "UI_HideKey", Default = currentHideKey, Callback = function(key) currentHideKey = key end })
 
     local SaveSec = ConfigTab:CreateSection("Save & Load", "Right")
-    local tbBg = Create("Frame", { Parent = SaveSec.Card.Parent, Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.BgBase })
-    Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = tbBg }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = tbBg })
-    local CfgNameBox = Create("TextBox", { Parent = tbBg, Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = "Default", TextColor3 = Theme.Text, Font = Fonts.Normal, TextSize = 12, PlaceholderText = "Config Name...", TextXAlignment = Enum.TextXAlignment.Left })
-    
-    local btnRow = Create("Frame", { Parent = SaveSec.Card.Parent, Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1 })
-    local sBtn = Create("TextButton", { Parent = btnRow, Size = UDim2.new(0.48, 0, 1, 0), BackgroundColor3 = Theme.Element, Text = "💾 Save", TextColor3 = Theme.Text, Font = Fonts.Header, TextSize = 12 })
-    Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = sBtn }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = sBtn })
-    local lBtn = Create("TextButton", { Parent = btnRow, Size = UDim2.new(0.48, 0, 1, 0), Position = UDim2.new(0.52, 0, 0, 0), BackgroundColor3 = Theme.Element, Text = "📂 Load", TextColor3 = Theme.Text, Font = Fonts.Header, TextSize = 12 })
-    Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = lBtn }); Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = lBtn })
-    
-    sBtn.MouseButton1Click:Connect(function() WindowObj.SaveConfig(CfgNameBox.Text); Tween(sBtn, {BackgroundColor3=Theme.AccentDark}, 0.1); task.wait(0.1); Tween(sBtn, {BackgroundColor3=Theme.Element}, 0.1) end)
-    lBtn.MouseButton1Click:Connect(function() WindowObj.LoadConfig(CfgNameBox.Text); Tween(lBtn, {BackgroundColor3=Theme.AccentDark}, 0.1); task.wait(0.1); Tween(lBtn, {BackgroundColor3=Theme.Element}, 0.1) end)
+    SaveSec:CreateTextBox({ Name = "Config Name...", Flag = "UI_ConfigName", Default = "Default" })
+    SaveSec:CreateButton("💾 Save Configuration", function() WindowObj.SaveConfig(zZz.Flags["UI_ConfigName"]) end)
+    SaveSec:CreateButton("📂 Load Configuration", function() WindowObj.LoadConfig(zZz.Flags["UI_ConfigName"]) end)
 
     return WindowObj
 end
