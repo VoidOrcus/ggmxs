@@ -932,14 +932,6 @@ function zZz:CreateWindow(config)
             AddListLayout(RightCol, Enum.FillDirection.Vertical, 6)
             AddPadding(RightCol, 4, 80, 4, 4)
 
-            -- Auto-resize columns
-            LeftCol:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                LeftCol.CanvasSize = UDim2.new(0, 0, 0, LeftCol.UIListLayout and LeftCol.UIListLayout.AbsoluteContentSize.Y + 20 or 0)
-            end)
-            RightCol:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                RightCol.CanvasSize = UDim2.new(0, 0, 0, RightCol.UIListLayout and RightCol.UIListLayout.AbsoluteContentSize.Y + 20 or 0)
-            end)
-
             -- Fix canvas size via layout
             for _, col in ipairs({LeftCol, RightCol}) do
                 local layout = col:FindFirstChildOfClass("UIListLayout")
