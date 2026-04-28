@@ -585,13 +585,14 @@ function zZz:CreateWindow(config)
         ZIndex = 3,
         Parent = Sidebar,
     })
-    Create("Frame", {
+       Create("Frame", {
         Size = UDim2.new(0, 8, 0, 8),
         Position = UDim2.new(0.5, -4, 0.5, -14),
         BackgroundColor3 = GREEN_ON,
         ZIndex = 4,
         Parent = StatusBar,
-    }):Parent = StatusBar
+    }) -- <-- Apenas isso! Removido o :Parent = StatusBar
+    
     do
         local dot = Create("Frame", {
             Size = UDim2.new(0, 8, 0, 8),
@@ -601,6 +602,7 @@ function zZz:CreateWindow(config)
             Parent = StatusBar,
         })
         AddCorner(dot, 4)
+    end
     end
     Create("TextLabel", {
         Size = UDim2.new(1, 0, 0, 14),
