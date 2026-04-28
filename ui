@@ -1,28 +1,33 @@
 -- ==============================================================================
--- zZz Hub | UI Library
--- Theme: Purple Starry Night | Mobile & PC Optimized
+-- zZz Hub v2.0 | Modern UI Library
+-- Theme: Purple Nebula | Icon Sidebar | Fully Animated
 -- ==============================================================================
 
-local zZz = {}
-zZz.Flags = {} -- Onde ficam salvos os valores (Toggles, Sliders, etc)
-zZz.Theme = {
-    MainBg = Color3.fromRGB(15, 10, 25),
-    TopBg = Color3.fromRGB(25, 15, 40),
-    Accent = Color3.fromRGB(138, 43, 226), -- Purple
-    AccentDark = Color3.fromRGB(75, 0, 130),
-    ElementBg = Color3.fromRGB(30, 20, 45),
-    Hover = Color3.fromRGB(45, 30, 65),
-    Text = Color3.fromRGB(240, 240, 255),
-    TextDark = Color3.fromRGB(150, 140, 180),
-    Border = Color3.fromRGB(60, 40, 90)
+local zZz = { Flags = {}, UpdateCallbacks = {} }
+local Theme = {
+    Background = Color3.fromRGB(12, 9, 18),      -- Fundo escuro principal
+    Sidebar = Color3.fromRGB(18, 14, 28),        -- Barra lateral um pouco mais clara
+    ElementBg = Color3.fromRGB(26, 20, 40),      -- Fundo de botões/toggles
+    Hover = Color3.fromRGB(40, 30, 60),          -- Cor ao passar o mouse
+    Accent = Color3.fromRGB(155, 89, 225),       -- Roxo vivo
+    AccentDark = Color3.fromRGB(110, 50, 180),   -- Roxo escuro para cliques
+    Text = Color3.fromRGB(245, 245, 255),        -- Texto principal (Branco suave)
+    TextMuted = Color3.fromRGB(150, 140, 170),   -- Texto descritivo/inativo
+    Border = Color3.fromRGB(45, 35, 65)          -- Bordas finas
+}
+
+-- Hierarquia de Fontes Modernas
+local Fonts = {
+    Title = Enum.Font.GothamBlack,
+    Header = Enum.Font.GothamBold,
+    Button = Enum.Font.GothamSemibold,
+    Text = Enum.Font.GothamMedium
 }
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
 
 local function Create(class, props)
     local inst = Instance.new(class)
@@ -34,13 +39,13 @@ local function Create(class, props)
 end
 
 local function Tween(obj, props, time)
-    local tw = TweenService:Create(obj, TweenInfo.new(time or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
+    local tw = TweenService:Create(obj, TweenInfo.new(time or 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
     tw:Play()
     return tw
 end
 
 local function MakeDraggable(topbar, main)
-    local dragging, dragInput, dragStart, startPos
+    local dragging, dragStart, startPos
     topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -51,11 +56,8 @@ local function MakeDraggable(topbar, main)
             end)
         end
     end)
-    topbar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-    end)
     UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
@@ -64,86 +66,108 @@ end
 
 function zZz:CreateWindow(config)
     config = config or {}
-    local Title = config.Title or "zZz Hub"
+    local TitleText = config.Title or "zZz Hub"
     local HideKey = config.HideKey or Enum.KeyCode.RightShift
     local SaveFolder = config.SaveName or "zZzConfigs"
     
-    if not isfolder(SaveFolder) then makefolder(SaveFolder) end
+    if not isfolder(SaveFolder) then pcall(makefolder, SaveFolder) end
+
+    -- Prevenção de duplicatas
+    if CoreGui:FindFirstChild("zZz_ModernHub") then CoreGui.zZz_ModernHub:Destroy() end
 
     local ScreenGui = Create("ScreenGui", {
-        Name = "zZzHub_Core",
-        Parent = gethui and gethui() or CoreGui,
-        ResetOnSpawn = false,
-        IgnoreGuiInset = true,
-        DisplayOrder = 999
+        Name = "zZz_ModernHub", Parent = gethui and gethui() or CoreGui, ResetOnSpawn = false, DisplayOrder = 999
     })
 
-    -- Bolha Mobile (Invisível no início)
+    -- ── BOLHA MOBILE (MINIMIZADA) ──
     local Bubble = Create("ImageButton", {
-        Name = "MobileBubble",
-        Parent = ScreenGui,
-        Size = UDim2.new(0, 50, 0, 50),
-        Position = UDim2.new(0.5, -25, 0, 20),
-        BackgroundColor3 = zZz.Theme.TopBg,
-        Visible = false,
-        ClipsDescendants = true
+        Parent = ScreenGui, Size = UDim2.new(0, 56, 0, 56), Position = UDim2.new(0.5, -28, 0, 20),
+        BackgroundColor3 = Theme.Sidebar, Visible = false, ClipsDescendants = true, AutoButtonColor = false
     })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Bubble })
-    Create("UIStroke", { Color = zZz.Theme.Accent, Thickness = 2, Parent = Bubble })
-    local BubbleGradient = Create("UIGradient", {
-        Color = ColorSequence.new{ColorSequenceKeypoint.new(0, zZz.Theme.Accent), ColorSequenceKeypoint.new(1, zZz.Theme.TopBg)},
-        Rotation = 45,
-        Parent = Bubble
-    })
+    Create("UIStroke", { Color = Theme.Accent, Thickness = 2, Parent = Bubble })
+    Create("UIGradient", { Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Theme.Accent), ColorSequenceKeypoint.new(1, Theme.Sidebar)}, Rotation = 45, Parent = Bubble })
     Create("TextLabel", {
         Parent = Bubble, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1,
-        Text = "zZz", TextColor3 = zZz.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 18
+        Text = "zZz", TextColor3 = Theme.Text, Font = Fonts.Title, TextSize = 18
     })
     MakeDraggable(Bubble, Bubble)
 
-    -- Janela Principal
+    -- ── JANELA PRINCIPAL ──
     local Main = Create("Frame", {
-        Name = "Main",
-        Parent = ScreenGui,
-        Size = UDim2.new(0, 600, 0, 400),
-        Position = UDim2.new(0.5, -300, 0.5, -200),
-        BackgroundColor3 = zZz.Theme.MainBg,
-        ClipsDescendants = true
+        Parent = ScreenGui, Size = UDim2.new(0, 620, 0, 420), Position = UDim2.new(0.5, -310, 0.5, -210),
+        BackgroundColor3 = Theme.Background, ClipsDescendants = true
     })
-    Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = Main })
-    Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1.5, Parent = Main })
+    Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = Main })
+    Create("UIStroke", { Color = Theme.Border, Thickness = 1.5, Parent = Main })
     
-    -- Efeito "Céu Estrelado" (Degradê escuro)
-    Create("UIGradient", {
-        Color = ColorSequence.new{ColorSequenceKeypoint.new(0, zZz.Theme.TopBg), ColorSequenceKeypoint.new(1, zZz.Theme.MainBg)},
-        Rotation = 90, Parent = Main
+    -- Efeito Starry/Gradient
+    Create("UIGradient", { Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 15, 30)), ColorSequenceKeypoint.new(1, Theme.Background)}, Rotation = 90, Parent = Main })
+
+    -- ── SIDEBAR (ICONES) ──
+    local Sidebar = Create("Frame", {
+        Parent = Main, Size = UDim2.new(0, 60, 1, 0), BackgroundColor3 = Theme.Sidebar, BorderSizePixel = 0
+    })
+    Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = Sidebar })
+    
+    local ProfilePic = Create("ImageLabel", {
+        Parent = Sidebar, Size = UDim2.new(0, 36, 0, 36), Position = UDim2.new(0, 12, 0, 12),
+        BackgroundColor3 = Theme.ElementBg, Image = "rbxassetid://15003664790" -- Ícone Lua/Hub genérico
+    })
+    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = ProfilePic })
+
+    local TabContainer = Create("ScrollingFrame", {
+        Parent = Sidebar, Size = UDim2.new(1, 0, 1, -70), Position = UDim2.new(0, 0, 0, 60),
+        BackgroundTransparency = 1, ScrollBarThickness = 0
+    })
+    Create("UIListLayout", { Parent = TabContainer, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 10) })
+    
+    -- Indicador animado da aba atual
+    local ActiveIndicator = Create("Frame", {
+        Parent = Sidebar, Size = UDim2.new(0, 3, 0, 0), Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Theme.Accent, BorderSizePixel = 0
+    })
+    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ActiveIndicator })
+
+    -- ── ÁREA DE CONTEÚDO (DIREITA) ──
+    local ContentArea = Create("Frame", {
+        Parent = Main, Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 60, 0, 0), BackgroundTransparency = 1
     })
 
-    local Topbar = Create("Frame", {
-        Name = "Topbar", Parent = Main, Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1
-    })
+    -- Topbar (Arrastável)
+    local Topbar = Create("Frame", { Parent = ContentArea, Size = UDim2.new(1, 0, 0, 50), BackgroundTransparency = 1 })
     MakeDraggable(Topbar, Main)
-    
-    local TitleLbl = Create("TextLabel", {
-        Parent = Topbar, Position = UDim2.new(0, 15, 0, 0), Size = UDim2.new(0, 200, 1, 0),
-        BackgroundTransparency = 1, Text = Title, TextColor3 = zZz.Theme.Accent,
-        Font = Enum.Font.GothamBold, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Título da Página Atual
+    local PageTitle = Create("TextLabel", {
+        Parent = Topbar, Position = UDim2.new(0, 20, 0, 0), Size = UDim2.new(0, 200, 1, 0), BackgroundTransparency = 1,
+        Text = TitleText, TextColor3 = Theme.Text, Font = Fonts.Title, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Left
     })
     
-    -- Botão de Minimizar (Mobile)
+    -- Botão Minimizar
     local MinBtn = Create("TextButton", {
-        Parent = Topbar, Position = UDim2.new(1, -45, 0, 10), Size = UDim2.new(0, 30, 0, 20),
-        BackgroundColor3 = zZz.Theme.ElementBg, Text = "-", TextColor3 = zZz.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 18
+        Parent = Topbar, Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -40, 0.5, -15),
+        BackgroundColor3 = Theme.ElementBg, Text = "-", TextColor3 = Theme.Text, Font = Fonts.Header, TextSize = 18, AutoButtonColor = false
     })
-    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = MinBtn })
+    Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = MinBtn })
+    MinBtn.MouseEnter:Connect(function() Tween(MinBtn, {BackgroundColor3 = Theme.Hover}) end)
+    MinBtn.MouseLeave:Connect(function() Tween(MinBtn, {BackgroundColor3 = Theme.ElementBg}) end)
     
     MinBtn.MouseButton1Click:Connect(function()
+        Tween(Main, {Size = UDim2.new(0, 620, 0, 0), BackgroundTransparency = 1}, 0.2)
+        task.wait(0.2)
         Main.Visible = false
         Bubble.Visible = true
+        Bubble.Size = UDim2.new(0,0,0,0)
+        Tween(Bubble, {Size = UDim2.new(0, 56, 0, 56)}, 0.3)
     end)
+    
     Bubble.MouseButton1Click:Connect(function()
+        Tween(Bubble, {Size = UDim2.new(0,0,0,0)}, 0.2)
+        task.wait(0.2)
         Bubble.Visible = false
         Main.Visible = true
+        Tween(Main, {Size = UDim2.new(0, 620, 0, 420), BackgroundTransparency = 0}, 0.3)
     end)
 
     -- Toggle GUI via Keybind
@@ -152,103 +176,124 @@ function zZz:CreateWindow(config)
         if gp then return end
         if input.KeyCode == currentHideKey then
             Main.Visible = not Main.Visible
-            Bubble.Visible = false -- PC não precisa da bolha ao usar tecla
+            Bubble.Visible = false 
         end
     end)
 
-    local Sidebar = Create("ScrollingFrame", {
-        Name = "Sidebar", Parent = Main, Position = UDim2.new(0, 10, 0, 50), Size = UDim2.new(0, 140, 1, -60),
-        BackgroundTransparency = 1, ScrollBarThickness = 0
-    })
-    local SidebarLayout = Create("UIListLayout", { Parent = Sidebar, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder })
-
-    local Container = Create("Frame", {
-        Name = "Container", Parent = Main, Position = UDim2.new(0, 160, 0, 50), Size = UDim2.new(1, -170, 1, -60),
-        BackgroundTransparency = 1
+    -- Container de Páginas
+    local PageFolder = Create("Frame", {
+        Parent = ContentArea, Size = UDim2.new(1, -20, 1, -60), Position = UDim2.new(0, 10, 0, 50), BackgroundTransparency = 1
     })
 
-    local WindowObj = {
-        Tabs = {},
-        CurrentTab = nil,
-        SaveConfig = function(name)
-            if not name or name == "" then name = "Default" end
-            local json = HttpService:JSONEncode(zZz.Flags)
-            writefile(SaveFolder.."/"..name..".json", json)
-        end,
-        LoadConfig = function(name)
-            local path = SaveFolder.."/"..name..".json"
-            if isfile(path) then
+    -- ── MÉTODOS DA WINDOW ──
+    local WindowObj = { Tabs = {}, CurrentTab = nil }
+
+    -- Sistemas de Configuração
+    WindowObj.SaveConfig = function(name)
+        if not name or name == "" then name = "Default" end
+        pcall(function() writefile(SaveFolder.."/"..name..".json", HttpService:JSONEncode(zZz.Flags)) end)
+    end
+    WindowObj.LoadConfig = function(name)
+        local path = SaveFolder.."/"..name..".json"
+        if isfile(path) then
+            pcall(function()
                 local data = HttpService:JSONDecode(readfile(path))
                 for k, v in pairs(data) do
-                    if zZz.Flags[k] ~= nil and zZz.UpdateCallbacks[k] then
-                        zZz.UpdateCallbacks[k](v)
-                    end
+                    if zZz.UpdateCallbacks[k] then zZz.UpdateCallbacks[k](v) end
                 end
-            end
+            end)
         end
-    }
+    end
 
-    zZz.UpdateCallbacks = {}
-
-    function WindowObj:CreateTab(name)
-        local TabBtn = Create("TextButton", {
-            Parent = Sidebar, Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = zZz.Theme.ElementBg,
-            Text = name, TextColor3 = zZz.Theme.TextDark, Font = Enum.Font.GothamSemibold, TextSize = 13
+    function WindowObj:CreateTab(name, iconId)
+        -- Botão Ícone na Sidebar
+        local TabBtn = Create("ImageButton", {
+            Parent = TabContainer, Size = UDim2.new(0, 36, 0, 36), BackgroundColor3 = Theme.Background,
+            Image = iconId or "rbxassetid://15003664790", ImageColor3 = Theme.TextMuted, AutoButtonColor = false
         })
-        Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn })
+        Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = TabBtn })
         
+        -- Página (ScrollingFrame)
         local Page = Create("ScrollingFrame", {
-            Parent = Container, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
-            ScrollBarThickness = 2, ScrollBarImageColor3 = zZz.Theme.Accent, Visible = false
+            Parent = PageFolder, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
+            ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Accent, Visible = false, CanvasSize = UDim2.new(0,0,0,0), AutomaticCanvasSize = Enum.AutomaticSize.Y
         })
         Create("UIListLayout", { Parent = Page, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
-        Create("UIPadding", { Parent = Page, PaddingRight = UDim.new(0, 6) })
+        Create("UIPadding", { Parent = Page, PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) })
+
+        TabBtn.MouseEnter:Connect(function()
+            if WindowObj.CurrentTab ~= name then
+                Tween(TabBtn, {BackgroundColor3 = Theme.Hover, ImageColor3 = Theme.Text})
+            end
+        end)
+        TabBtn.MouseLeave:Connect(function()
+            if WindowObj.CurrentTab ~= name then
+                Tween(TabBtn, {BackgroundColor3 = Theme.Background, ImageColor3 = Theme.TextMuted})
+            end
+        end)
 
         TabBtn.MouseButton1Click:Connect(function()
+            -- Animação de transição de abas
             for _, t in pairs(WindowObj.Tabs) do
                 t.Page.Visible = false
-                Tween(t.Btn, {BackgroundColor3 = zZz.Theme.ElementBg, TextColor3 = zZz.Theme.TextDark})
+                Tween(t.Btn, {BackgroundColor3 = Theme.Background, ImageColor3 = Theme.TextMuted})
             end
+            
             Page.Visible = true
-            Tween(TabBtn, {BackgroundColor3 = zZz.Theme.Accent, TextColor3 = zZz.Theme.Text})
+            Tween(TabBtn, {BackgroundColor3 = Theme.AccentDark, ImageColor3 = Theme.Text})
+            Tween(ActiveIndicator, {Size = UDim2.new(0, 3, 0, 24), Position = UDim2.new(0, 0, 0, TabBtn.AbsolutePosition.Y - Sidebar.AbsolutePosition.Y + 6)}, 0.25)
+            
+            -- Animação do Título da Página (Sobe, muda o texto, desce)
+            Tween(PageTitle, {TextTransparency = 1, Position = UDim2.new(0, 20, 0, -10)}, 0.15).Completed:Connect(function()
+                PageTitle.Text = name
+                Tween(PageTitle, {TextTransparency = 0, Position = UDim2.new(0, 20, 0, 0)}, 0.15)
+            end)
+            
             WindowObj.CurrentTab = name
         end)
 
         if not WindowObj.CurrentTab then
             Page.Visible = true
-            TabBtn.BackgroundColor3 = zZz.Theme.Accent
-            TabBtn.TextColor3 = zZz.Theme.Text
+            TabBtn.BackgroundColor3 = Theme.AccentDark
+            TabBtn.ImageColor3 = Theme.Text
+            PageTitle.Text = name
             WindowObj.CurrentTab = name
+            task.delay(0.1, function()
+                ActiveIndicator.Position = UDim2.new(0, 0, 0, TabBtn.AbsolutePosition.Y - Sidebar.AbsolutePosition.Y + 6)
+                ActiveIndicator.Size = UDim2.new(0, 3, 0, 24)
+            end)
         end
 
         local TabObj = {Page = Page, Btn = TabBtn}
         table.insert(WindowObj.Tabs, TabObj)
 
+        -- ── ELEMENTOS DA ABA ──
+        
         function TabObj:CreateSeparator(text)
-            local Sep = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1 })
+            local Sep = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 25), BackgroundTransparency = 1 })
             Create("TextLabel", {
                 Parent = Sep, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
-                Text = text, TextColor3 = zZz.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left
+                Text = text, TextColor3 = Theme.Accent, Font = Fonts.Header, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left
             })
-            Create("Frame", {
-                Parent = Sep, Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = zZz.Theme.Border
-            })
+            Create("Frame", { Parent = Sep, Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, -20, 0, 1), BackgroundColor3 = Theme.Border })
         end
 
         function TabObj:CreateButton(text, callback)
-            local Btn = Create("TextButton", {
-                Parent = Page, Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = zZz.Theme.ElementBg,
-                Text = text, TextColor3 = zZz.Theme.Text, Font = Enum.Font.GothamSemibold, TextSize = 13
-            })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = Btn })
+            local BtnBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Theme.ElementBg })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = BtnBg })
+            Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = BtnBg })
             
-            Btn.MouseEnter:Connect(function() Tween(Btn, {BackgroundColor3 = zZz.Theme.Hover}) end)
-            Btn.MouseLeave:Connect(function() Tween(Btn, {BackgroundColor3 = zZz.Theme.ElementBg}) end)
+            local Btn = Create("TextButton", {
+                Parent = BtnBg, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1,
+                Text = text, TextColor3 = Theme.Text, Font = Fonts.Button, TextSize = 14
+            })
+            
+            Btn.MouseEnter:Connect(function() Tween(BtnBg, {BackgroundColor3 = Theme.Hover}) end)
+            Btn.MouseLeave:Connect(function() Tween(BtnBg, {BackgroundColor3 = Theme.ElementBg}) end)
             Btn.MouseButton1Click:Connect(function()
-                Tween(Btn, {BackgroundColor3 = zZz.Theme.AccentDark}, 0.1)
-                task.wait(0.1)
-                Tween(Btn, {BackgroundColor3 = zZz.Theme.Hover}, 0.1)
+                local pop = Create("Frame", { Parent = BtnBg, BackgroundColor3 = Theme.Accent, Size = UDim2.fromScale(1,1), BackgroundTransparency = 0.5 })
+                Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = pop })
+                Tween(pop, {BackgroundTransparency = 1, Size = UDim2.new(1.05, 0, 1.2, 0), Position = UDim2.new(-0.025, 0, -0.1, 0)}, 0.3).Completed:Connect(function() pop:Destroy() end)
                 if callback then pcall(callback) end
             end)
         end
@@ -261,39 +306,36 @@ function zZz:CreateWindow(config)
             
             zZz.Flags[flag] = default
 
-            local TglBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = zZz.Theme.ElementBg })
+            local TglBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Theme.ElementBg })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TglBg })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = TglBg })
+            Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = TglBg })
             
             Create("TextLabel", {
-                Parent = TglBg, Position = UDim2.new(0, 10, 0, 0), Size = UDim2.new(1, -60, 1, 0),
-                BackgroundTransparency = 1, Text = name, TextColor3 = zZz.Theme.Text,
-                Font = Enum.Font.GothamSemibold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
+                Parent = TglBg, Position = UDim2.new(0, 15, 0, 0), Size = UDim2.new(1, -80, 1, 0), BackgroundTransparency = 1,
+                Text = name, TextColor3 = Theme.Text, Font = Fonts.Text, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
             })
 
-            local Switch = Create("Frame", {
-                Parent = TglBg, Position = UDim2.new(1, -45, 0.5, -10), Size = UDim2.new(0, 36, 0, 20),
-                BackgroundColor3 = default and zZz.Theme.Accent or zZz.Theme.MainBg
-            })
-            Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Switch })
-            local Dot = Create("Frame", {
-                Parent = Switch, Position = UDim2.new(default and 1 or 0, default and -18 or 2, 0.5, -8),
-                Size = UDim2.new(0, 16, 0, 16), BackgroundColor3 = Color3.fromRGB(255,255,255)
-            })
+            local SwitchBg = Create("Frame", { Parent = TglBg, Position = UDim2.new(1, -50, 0.5, -10), Size = UDim2.new(0, 38, 0, 20), BackgroundColor3 = Theme.Background })
+            Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = SwitchBg })
+            Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = SwitchBg })
+            
+            local Dot = Create("Frame", { Parent = SwitchBg, Position = UDim2.new(0, 2, 0.5, -7), Size = UDim2.new(0, 14, 0, 14), BackgroundColor3 = Theme.TextMuted })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Dot })
 
-            local Hitbox = Create("TextButton", { Parent = TglBg, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Text = "" })
+            local Hitbox = Create("TextButton", { Parent = TglBg, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Text = "" })
 
             local function SetState(state)
                 zZz.Flags[flag] = state
-                Tween(Switch, {BackgroundColor3 = state and zZz.Theme.Accent or zZz.Theme.MainBg})
-                Tween(Dot, {Position = UDim2.new(state and 1 or 0, state and -18 or 2, 0.5, -8)})
+                Tween(SwitchBg, {BackgroundColor3 = state and Theme.Accent or Theme.Background})
+                Tween(Dot, {Position = UDim2.new(state and 1 or 0, state and -16 or 2, 0.5, -7), BackgroundColor3 = state and Color3.new(1,1,1) or Theme.TextMuted})
                 pcall(callback, state)
             end
 
             zZz.UpdateCallbacks[flag] = SetState
-
             Hitbox.MouseButton1Click:Connect(function() SetState(not zZz.Flags[flag]) end)
+            Hitbox.MouseEnter:Connect(function() Tween(TglBg, {BackgroundColor3 = Theme.Hover}) end)
+            Hitbox.MouseLeave:Connect(function() Tween(TglBg, {BackgroundColor3 = Theme.ElementBg}) end)
+            
             SetState(default)
         end
 
@@ -307,34 +349,22 @@ function zZz:CreateWindow(config)
 
             zZz.Flags[flag] = default
 
-            local SldBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 50), BackgroundColor3 = zZz.Theme.ElementBg })
+            local SldBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 55), BackgroundColor3 = Theme.ElementBg })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SldBg })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = SldBg })
+            Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = SldBg })
 
-            Create("TextLabel", {
-                Parent = SldBg, Position = UDim2.new(0, 10, 0, 5), Size = UDim2.new(1, -60, 0, 15),
-                BackgroundTransparency = 1, Text = name, TextColor3 = zZz.Theme.Text,
-                Font = Enum.Font.GothamSemibold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
-            })
+            Create("TextLabel", { Parent = SldBg, Position = UDim2.new(0, 15, 0, 8), Size = UDim2.new(1, -60, 0, 15), BackgroundTransparency = 1, Text = name, TextColor3 = Theme.Text, Font = Fonts.Text, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left })
+            local ValLbl = Create("TextLabel", { Parent = SldBg, Position = UDim2.new(1, -50, 0, 8), Size = UDim2.new(0, 35, 0, 15), BackgroundTransparency = 1, Text = tostring(default), TextColor3 = Theme.Accent, Font = Fonts.Button, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right })
 
-            local ValueLbl = Create("TextLabel", {
-                Parent = SldBg, Position = UDim2.new(1, -50, 0, 5), Size = UDim2.new(0, 40, 0, 15),
-                BackgroundTransparency = 1, Text = tostring(default), TextColor3 = zZz.Theme.Accent,
-                Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right
-            })
-
-            local Track = Create("Frame", {
-                Parent = SldBg, Position = UDim2.new(0, 10, 0, 30), Size = UDim2.new(1, -20, 0, 8),
-                BackgroundColor3 = zZz.Theme.MainBg
-            })
+            local Track = Create("Frame", { Parent = SldBg, Position = UDim2.new(0, 15, 0, 35), Size = UDim2.new(1, -30, 0, 6), BackgroundColor3 = Theme.Background })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
-            local Fill = Create("Frame", { Parent = Track, Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = zZz.Theme.Accent })
+            local Fill = Create("Frame", { Parent = Track, Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Theme.Accent })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
 
             local function SetValue(val)
-                val = math.clamp(val, min, max)
+                val = math.clamp(math.floor(val), min, max)
                 zZz.Flags[flag] = val
-                ValueLbl.Text = tostring(math.floor(val))
+                ValLbl.Text = tostring(val)
                 Tween(Fill, {Size = UDim2.new((val - min) / (max - min), 0, 1, 0)}, 0.1)
                 pcall(callback, val)
             end
@@ -344,18 +374,13 @@ function zZz:CreateWindow(config)
             local dragging = false
             Track.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    local pct = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
-                    SetValue(min + (max - min) * pct)
+                    dragging = true; SetValue(min + (max - min) * math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1))
                 end
             end)
-            UIS.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-            end)
+            UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
             UIS.InputChanged:Connect(function(input)
                 if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local pct = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
-                    SetValue(min + (max - min) * pct)
+                    SetValue(min + (max - min) * math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1))
                 end
             end)
             SetValue(default)
@@ -370,37 +395,27 @@ function zZz:CreateWindow(config)
 
             zZz.Flags[flag] = default
 
-            local DropBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = zZz.Theme.ElementBg, ClipsDescendants = true })
+            local DropBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Theme.ElementBg, ClipsDescendants = true })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = DropBg })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = DropBg })
+            Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = DropBg })
 
-            local TopBtn = Create("TextButton", { Parent = DropBg, Size = UDim2.new(1,0,0,35), BackgroundTransparency = 1, Text = "" })
-            Create("TextLabel", {
-                Parent = TopBtn, Position = UDim2.new(0, 10, 0, 0), Size = UDim2.new(1, -60, 1, 0),
-                BackgroundTransparency = 1, Text = name .. ": " .. tostring(default), TextColor3 = zZz.Theme.Text,
-                Font = Enum.Font.GothamSemibold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
-            })
-            local Icon = Create("TextLabel", {
-                Parent = TopBtn, Position = UDim2.new(1, -30, 0, 0), Size = UDim2.new(0, 20, 1, 0),
-                BackgroundTransparency = 1, Text = "+", TextColor3 = zZz.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 18
-            })
+            local TopBtn = Create("TextButton", { Parent = DropBg, Size = UDim2.new(1,0,0,40), BackgroundTransparency = 1, Text = "" })
+            local TitleL = Create("TextLabel", { Parent = TopBtn, Position = UDim2.new(0, 15, 0, 0), Size = UDim2.new(1, -60, 1, 0), BackgroundTransparency = 1, Text = name .. ": " .. tostring(default), TextColor3 = Theme.Text, Font = Fonts.Text, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left })
+            local Icon = Create("TextLabel", { Parent = TopBtn, Position = UDim2.new(1, -30, 0, 0), Size = UDim2.new(0, 20, 1, 0), BackgroundTransparency = 1, Text = "▼", TextColor3 = Theme.Accent, Font = Fonts.Button, TextSize = 14 })
 
-            local List = Create("ScrollingFrame", {
-                Parent = DropBg, Position = UDim2.new(0, 0, 0, 35), Size = UDim2.new(1, 0, 1, -35),
-                BackgroundTransparency = 1, ScrollBarThickness = 2, ScrollBarImageColor3 = zZz.Theme.Accent
-            })
+            local List = Create("ScrollingFrame", { Parent = DropBg, Position = UDim2.new(0, 0, 0, 40), Size = UDim2.new(1, 0, 1, -40), BackgroundTransparency = 1, ScrollBarThickness = 2, ScrollBarImageColor3 = Theme.Accent })
             Create("UIListLayout", { Parent = List, SortOrder = Enum.SortOrder.LayoutOrder })
 
             local isOpen = false
             local function ToggleDrop()
                 isOpen = not isOpen
-                Tween(DropBg, {Size = UDim2.new(1, 0, 0, isOpen and math.min(35 + (#options * 25), 135) or 35)})
-                Icon.Text = isOpen and "-" or "+"
+                Tween(DropBg, {Size = UDim2.new(1, 0, 0, isOpen and math.min(40 + (#options * 30), 140) or 40)}, 0.2)
+                Tween(Icon, {Rotation = isOpen and 180 or 0}, 0.2)
             end
 
             local function SetValue(val)
                 zZz.Flags[flag] = val
-                TopBtn:FindFirstChildOfClass("TextLabel").Text = name .. ": " .. tostring(val)
+                TitleL.Text = name .. ": " .. tostring(val)
                 pcall(callback, val)
                 if isOpen then ToggleDrop() end
             end
@@ -409,157 +424,119 @@ function zZz:CreateWindow(config)
             TopBtn.MouseButton1Click:Connect(ToggleDrop)
 
             for _, opt in ipairs(options) do
-                local OptBtn = Create("TextButton", {
-                    Parent = List, Size = UDim2.new(1, 0, 0, 25), BackgroundColor3 = zZz.Theme.ElementBg,
-                    Text = tostring(opt), TextColor3 = zZz.Theme.TextDark, Font = Enum.Font.Gotham, TextSize = 12
-                })
-                OptBtn.MouseEnter:Connect(function() Tween(OptBtn, {BackgroundColor3 = zZz.Theme.Hover, TextColor3 = zZz.Theme.Accent}) end)
-                OptBtn.MouseLeave:Connect(function() Tween(OptBtn, {BackgroundColor3 = zZz.Theme.ElementBg, TextColor3 = zZz.Theme.TextDark}) end)
+                local OptBtn = Create("TextButton", { Parent = List, Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Theme.Background, Text = tostring(opt), TextColor3 = Theme.TextMuted, Font = Fonts.Text, TextSize = 12 })
+                OptBtn.MouseEnter:Connect(function() Tween(OptBtn, {BackgroundColor3 = Theme.Hover, TextColor3 = Theme.Text}) end)
+                OptBtn.MouseLeave:Connect(function() Tween(OptBtn, {BackgroundColor3 = Theme.Background, TextColor3 = Theme.TextMuted}) end)
                 OptBtn.MouseButton1Click:Connect(function() SetValue(opt) end)
             end
             SetValue(default)
         end
 
-        function TabObj:CreateColorPicker(config)
-            -- Simplificado com RGB inputs para ser leve e seguro
-            local name = config.Name or "Color Picker"
-            local flag = config.Flag or name
-            local default = config.Default or Color3.new(1,1,1)
-            local callback = config.Callback or function() end
-
-            zZz.Flags[flag] = default
-
-            local CPBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = zZz.Theme.ElementBg })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = CPBg })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = CPBg })
-
-            Create("TextLabel", {
-                Parent = CPBg, Position = UDim2.new(0, 10, 0, 0), Size = UDim2.new(1, -60, 1, 0),
-                BackgroundTransparency = 1, Text = name, TextColor3 = zZz.Theme.Text,
-                Font = Enum.Font.GothamSemibold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
-            })
-
-            local Display = Create("Frame", {
-                Parent = CPBg, Position = UDim2.new(1, -40, 0.5, -10), Size = UDim2.new(0, 30, 0, 20),
-                BackgroundColor3 = default
-            })
-            Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Display })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = Display })
-
-            local function SetColor(col)
-                zZz.Flags[flag] = col
-                Tween(Display, {BackgroundColor3 = col})
-                pcall(callback, col)
-            end
-            zZz.UpdateCallbacks[flag] = SetColor
-
-            -- Cores Predefinidas Clicando (Mini Paleta Oculta)
-            local Palette = Create("Frame", {
-                Parent = Page, Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, Visible = false
-            })
-            local PLayout = Create("UIListLayout", { Parent = Palette, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center })
-            local colors = {Color3.new(1,0,0), Color3.new(0,1,0), Color3.new(0,0,1), Color3.new(1,1,0), Color3.new(1,0,1), Color3.new(1,1,1), zZz.Theme.Accent}
-            
-            for _, c in ipairs(colors) do
-                local cB = Create("TextButton", { Parent = Palette, Size = UDim2.new(0, 25, 0, 25), BackgroundColor3 = c, Text = "" })
-                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = cB })
-                cB.MouseButton1Click:Connect(function() SetColor(c) end)
-            end
-
-            local pOpen = false
-            local Hitbox = Create("TextButton", { Parent = CPBg, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Text = "" })
-            Hitbox.MouseButton1Click:Connect(function()
-                pOpen = not pOpen
-                Palette.Visible = pOpen
-            end)
-            SetColor(default)
-        end
-
-        function TabObj:CreateKeybind(config)
-            local name = config.Name or "Keybind"
-            local flag = config.Flag or name
-            local default = config.Default or Enum.KeyCode.E
-            local callback = config.Callback or function() end
-
-            zZz.Flags[flag] = default
-
-            local KeyBg = Create("Frame", { Parent = Page, Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = zZz.Theme.ElementBg })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyBg })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = KeyBg })
-
-            Create("TextLabel", {
-                Parent = KeyBg, Position = UDim2.new(0, 10, 0, 0), Size = UDim2.new(1, -100, 1, 0),
-                BackgroundTransparency = 1, Text = name, TextColor3 = zZz.Theme.Text,
-                Font = Enum.Font.GothamSemibold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
-            })
-
-            local KeyBtn = Create("TextButton", {
-                Parent = KeyBg, Position = UDim2.new(1, -80, 0.5, -12), Size = UDim2.new(0, 70, 0, 24),
-                BackgroundColor3 = zZz.Theme.MainBg, Text = default.Name, TextColor3 = zZz.Theme.Accent,
-                Font = Enum.Font.GothamBold, TextSize = 12
-            })
-            Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = KeyBtn })
-            Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = KeyBtn })
-
-            local listening = false
-            local conn
-            local function SetKey(k)
-                zZz.Flags[flag] = k
-                KeyBtn.Text = k.Name
-                if flag == "UI_HideKey" then currentHideKey = k end
-            end
-
-            zZz.UpdateCallbacks[flag] = SetKey
-
-            KeyBtn.MouseButton1Click:Connect(function()
-                listening = true
-                KeyBtn.Text = "..."
-                if conn then conn:Disconnect() end
-                conn = UIS.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.Keyboard then
-                        if input.KeyCode ~= Enum.KeyCode.Escape then
-                            SetKey(input.KeyCode)
-                            pcall(callback, input.KeyCode)
-                        end
-                        listening = false
-                        conn:Disconnect()
-                    end
-                end)
-            end)
-        end
-
         return TabObj
     end
 
-    -- Setup Automático da Página de Config
-    local ConfigTab = WindowObj:CreateTab("⚙ Configs")
-    ConfigTab:CreateSeparator("UI Settings")
-    ConfigTab:CreateKeybind({
-        Name = "Hide GUI Key", Flag = "UI_HideKey", Default = HideKey
-    })
-    ConfigTab:CreateSeparator("Save / Load")
+    -- ── ABA DE CONFIGURAÇÃO PADRÃO ──
+    -- Usando o ícone de engrenagem do Roblox
+    local ConfigTab = WindowObj:CreateTab("Settings", "rbxassetid://15003666245") 
+    ConfigTab:CreateSeparator("Menu Settings")
     
-    local configName = "Default"
-    
-    -- TextBox Simulada para digitar nome
-    local tbBg = Create("Frame", { Parent = ConfigTab.Page, Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = zZz.Theme.MainBg })
+    -- TextBox Customizado para salvar
+    local tbBg = Create("Frame", { Parent = ConfigTab.Page, Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Theme.Background })
     Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = tbBg })
-    Create("UIStroke", { Color = zZz.Theme.Border, Thickness = 1, Parent = tbBg })
-    local TB = Create("TextBox", {
-        Parent = tbBg, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1,
-        Text = configName, TextColor3 = zZz.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13,
-        PlaceholderText = "Config Name..."
+    Create("UIStroke", { Color = Theme.Border, Thickness = 1, Parent = tbBg })
+    local CfgNameBox = Create("TextBox", {
+        Parent = tbBg, Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1, Text = "Default", TextColor3 = Theme.Text, Font = Fonts.Text, TextSize = 13, PlaceholderText = "Config Name...", TextXAlignment = Enum.TextXAlignment.Left
     })
-    TB.FocusLost:Connect(function() configName = TB.Text end)
-
-    ConfigTab:CreateButton("💾 Save Config", function()
-        WindowObj.SaveConfig(configName)
+    
+    ConfigTab:CreateButton("💾 Save Configuration", function()
+        WindowObj.SaveConfig(CfgNameBox.Text)
+        print("Salvo: " .. CfgNameBox.Text)
     end)
-    ConfigTab:CreateButton("📂 Load Config", function()
-        WindowObj.LoadConfig(configName)
+    ConfigTab:CreateButton("📂 Load Configuration", function()
+        WindowObj.LoadConfig(CfgNameBox.Text)
+        print("Carregado: " .. CfgNameBox.Text)
     end)
 
     return WindowObj
 end
 
-return zZz
+
+-- ==============================================================================
+-- ⬇️ O SEU SCRIPT (O QUE VOCÊ VAI PROGRAMAR) COMEÇA AQUI ⬇️
+-- ==============================================================================
+
+-- Cria a Janela
+local Window = zZz:CreateWindow({
+    Title = "zZz Hub - Extinction",
+    HideKey = Enum.KeyCode.RightShift,
+    SaveName = "zZzConfigs_PE"
+})
+
+-- Cria a aba de COMBATE (Usando um ícone de espadas/alvo)
+local CombatTab = Window:CreateTab("Combat", "rbxassetid://15003663806")
+
+CombatTab:CreateSeparator("Pounce System")
+
+CombatTab:CreateToggle({
+    Name = "Enable Auto-Latch",
+    Flag = "AutoLatch",
+    Default = false,
+    Callback = function(Value)
+        print("Auto Latch Ligado: ", Value)
+        -- Coloque seu F.enableAutoLatch / disable aqui
+    end
+})
+
+CombatTab:CreateSlider({
+    Name = "Latch Range",
+    Flag = "LatchDist",
+    Min = 10,
+    Max = 60,
+    Default = 30,
+    Callback = function(Value)
+        print("Distância de Latch: ", Value)
+    end
+})
+
+CombatTab:CreateSeparator("Survival")
+
+CombatTab:CreateToggle({
+    Name = "Infinity Stamina",
+    Flag = "InfStam",
+    Default = false,
+    Callback = function(Value)
+        print("Stamina infinita: ", Value)
+    end
+})
+
+-- Cria a aba VISUAIS (Usando um ícone de Olho/Visão)
+local VisualsTab = Window:CreateTab("Visuals", "rbxassetid://15003664273")
+
+VisualsTab:CreateSeparator("ESP")
+
+VisualsTab:CreateToggle({
+    Name = "Player ESP",
+    Flag = "PlayerESP",
+    Default = false,
+    Callback = function(Value)
+        print("ESP Jogador: ", Value)
+    end
+})
+
+VisualsTab:CreateDropdown({
+    Name = "ESP Highlight Type",
+    Flag = "ESP_Type",
+    Options = {"Box + Name", "Skeleton", "Highlight", "Tracers"},
+    Default = "Box + Name",
+    Callback = function(Value)
+        print("Modo de ESP alterado para: ", Value)
+    end
+})
+
+VisualsTab:CreateButton("Unload ESP", function()
+    print("ESP Descarregado e memória limpa!")
+end)
+
+-- Tenta carregar a configuração "Default" se ela já existir na sua pasta
+Window.LoadConfig("Default")
