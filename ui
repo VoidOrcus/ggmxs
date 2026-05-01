@@ -38,16 +38,7 @@ function zZzUILibrary:CreateWindow(options)
         Text    = Color3.fromRGB(255, 255, 255),
         TextSub = Color3.fromRGB(160, 150, 190),
     }
-
-
-    if options.Colors then
-        for key, value in pairs(options.Colors) do
-            if C[key] ~= nil and typeof(value) == "Color3" then
-                C[key] = value
-            end
-        end
-    end
-
+    -- Cores fixas da interface: options.Colors é ignorado de propósito.
     local PaletteRefs = {}
     for k in pairs(C) do PaletteRefs[k] = {} end
 
@@ -218,10 +209,12 @@ function zZzUILibrary:CreateWindow(options)
         Copy      = "rbxassetid://109353702840731",
         Save      = "rbxassetid://136594059453087",
     }
-
     if options.Icons then
         for key, value in pairs(options.Icons) do
-            Icons[key] = value
+            -- Logo fixa da biblioteca: não sobrescrever Icons.Logo.
+            if key ~= "Logo" then
+                Icons[key] = value
+            end
         end
     end
 
@@ -915,15 +908,29 @@ function zZzUILibrary:CreateWindow(options)
                     L_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Left
                     R_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Left
                 elseif hasLeft then
-                    LeftCol.Size      = UDim2.new(1, 0, 0, 0)
-                    LeftCol.Position  = UDim2.new(0, 0, 0, 0)
+                    -- ColorPicker sozinho não deve esticar até o conteúdo inteiro.
+                    if subObj._onlyFixedHalfLeft then
+                        LeftCol.Size      = UDim2.new(0.5, -5, 0, 0)
+                        LeftCol.Position  = UDim2.new(0, 0, 0, 0)
+                        L_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Left
+                    else
+                        LeftCol.Size      = UDim2.new(1, 0, 0, 0)
+                        LeftCol.Position  = UDim2.new(0, 0, 0, 0)
+                        L_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                    end
                     RightCol.Size     = UDim2.new(0, 0, 0, 0)
-                    L_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
                 elseif hasRight then
-                    RightCol.Size     = UDim2.new(1, 0, 0, 0)
-                    RightCol.Position = UDim2.new(0, 0, 0, 0)
+                    -- ColorPicker sozinho não deve esticar até o conteúdo inteiro.
+                    if subObj._onlyFixedHalfRight then
+                        RightCol.Size     = UDim2.new(0.5, -5, 0, 0)
+                        RightCol.Position = UDim2.new(0.5, 5, 0, 0)
+                        R_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Left
+                    else
+                        RightCol.Size     = UDim2.new(1, 0, 0, 0)
+                        RightCol.Position = UDim2.new(0, 0, 0, 0)
+                        R_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                    end
                     LeftCol.Size      = UDim2.new(0, 0, 0, 0)
-                    R_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
                 else
                     LeftCol.Size      = UDim2.new(0.5, -5, 0, 0)
                     LeftCol.Position  = UDim2.new(0, 0, 0, 0)
@@ -939,6 +946,8 @@ function zZzUILibrary:CreateWindow(options)
                 subObj._centerItems = 0
                 subObj._leftWeight = 0
                 subObj._rightWeight = 0
+                subObj._onlyFixedHalfLeft = false
+                subObj._onlyFixedHalfRight = false
                 CenterCol.Visible = false
             end
 
@@ -949,9 +958,11 @@ function zZzUILibrary:CreateWindow(options)
                 if parent == LeftCol then
                     subObj._leftItems = subObj._leftItems + 1
                     subObj._leftWeight = subObj._leftWeight + item.Weight
+                    subObj._onlyFixedHalfLeft = (subObj._leftItems == 1 and item.FixedHalf == true)
                 elseif parent == RightCol then
                     subObj._rightItems = subObj._rightItems + 1
                     subObj._rightWeight = subObj._rightWeight + item.Weight
+                    subObj._onlyFixedHalfRight = (subObj._rightItems == 1 and item.FixedHalf == true)
                 elseif parent == CenterCol then
                     subObj._centerItems = subObj._centerItems + 1
                     CenterCol.Visible = true
@@ -1052,6 +1063,7 @@ function zZzUILibrary:CreateWindow(options)
                     Kind = kind or "normal",
                     Weight = weight or 1,
                     PreferredSide = preferredSide,
+                    FixedHalf = (kind == "colorpicker"),
                 })
 
                 self:_applySmartLayout()
@@ -2083,16 +2095,13 @@ function zZzUILibrary:CreateWindow(options)
     end
 
     function Window:SetLogo(assetId)
-        Icons.Logo = assetId
-        LogoIcon.Image = assetId
-        Bubble.Image = assetId
+        -- Logo fixa da interface. Mantido por compatibilidade, mas não altera a logo.
         return self
     end
 
     function Window:SetColor(key, color)
-        if C[key] ~= nil and typeof(color) == "Color3" then
-            SetPaletteColor(key, color)
-        end
+        -- Cores da interface são fixas.
+        -- Use ColorPicker próprio para cores de conteúdo, como ESP Fill.
         return self
     end
 
@@ -2351,14 +2360,23 @@ function zZzUILibrary:CreateWindow(options)
             RefColor("Primary", l, "TextColor3")
         end
 
-        MakeColorSectionLabel(SubCfgColors.Left,  "THEME COLORS",  SubCfgColors, "left")
-        MakeColorSectionLabel(SubCfgColors.Right, "UI COLORS",     SubCfgColors, "right")
+        MakeColorSectionLabel(SubCfgColors.Left,  "FIXED THEME",  SubCfgColors, "left")
+        MakeColorSectionLabel(SubCfgColors.Right, "UI LOCKED",     SubCfgColors, "right")
+
+        local fixedNotice = Instance.new("TextLabel", SubCfgColors.Left)
+        fixedNotice.Size = UDim2.new(1, 0, 0, 44)
+        fixedNotice.BackgroundTransparency = 1
+        fixedNotice.Text = "Logo e cores da interface são fixas.\nUse ColorPicker apenas nos seus conteúdos, como ESP Fill."
+        fixedNotice.TextColor3 = C.TextSub
+        fixedNotice.Font = Enum.Font.GothamMedium
+        fixedNotice.TextSize = 10
+        fixedNotice.TextWrapped = true
+        fixedNotice.TextXAlignment = Enum.TextXAlignment.Left
+        fixedNotice.TextYAlignment = Enum.TextYAlignment.Top
+        RefColor("TextSub", fixedNotice, "TextColor3")
 
         -- Esquerda: apenas Primary Color (removido Accent)
-        SubCfgColors:CreateColorPickerInline("Primary Color", "Main purple accent", C.Primary, function(newColor)
-            SetPaletteColor("Primary", newColor)
-            Glow.ImageColor3 = newColor
-        end, "Primary")
+        -- Interface fixa: Primary Color removido/desativado.
 
         -- Direita: apenas MainBG, HeaderBG, Border/Lines, Subtitle
         do
@@ -2697,10 +2715,11 @@ function zZzUILibrary:CreateWindow(options)
             end
 
             -- Apenas 4 cores nas linhas compactas (removidos Card, Dark, Header)
-            MakeCompactColorRow(SubCfgColors.Right, "Subtitle Text",  "TextSub")
-            MakeCompactColorRow(SubCfgColors.Right, "Border / Lines", "Border")
-            MakeCompactColorRow(SubCfgColors.Right, "Main BG",        "BgMain")
-            MakeCompactColorRow(SubCfgColors.Right, "Header BG",      "Header")
+            -- Interface fixa: linhas de cor da UI removidas/desativadas.
+            -- MakeCompactColorRow(SubCfgColors.Right, "Subtitle Text",  "TextSub")
+            -- MakeCompactColorRow(SubCfgColors.Right, "Border / Lines", "Border")
+            -- MakeCompactColorRow(SubCfgColors.Right, "Main BG",        "BgMain")
+            -- MakeCompactColorRow(SubCfgColors.Right, "Header BG",      "Header")
         end
         return TabConfig
     end
