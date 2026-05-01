@@ -1243,7 +1243,7 @@ function zZzUILibrary:CreateWindow(options)
                 local regEntry = { id = NewRegId("chk"), title = title }
 
                 local f = Instance.new("TextButton")
-                f.Size = UDim2.new(1, 0, 0, 62)
+                f.Size = UDim2.new(1, 0, 0, 72)
                 f.BackgroundColor3 = C.Card
                 f.Text = ""; f.AutoButtonColor = false
                 f.BorderSizePixel = 0
@@ -1280,14 +1280,14 @@ function zZzUILibrary:CreateWindow(options)
                 RefColor("Text", tLbl, "TextColor3")
 
                 local dLbl = Instance.new("TextLabel", f)
-                dLbl.Size = UDim2.new(1, -75, 0, 26); dLbl.Position = UDim2.new(0, 12, 0, 29)
+                dLbl.Size = UDim2.new(1, -75, 0, 36); dLbl.Position = UDim2.new(0, 12, 0, 29)
                 dLbl.BackgroundTransparency = 1; dLbl.Text = desc or ""
                 dLbl.TextColor3 = C.TextSub; dLbl.Font = Enum.Font.Gotham
                 dLbl.TextSize = 10
                 dLbl.TextXAlignment = Enum.TextXAlignment.Left
                 dLbl.TextYAlignment = Enum.TextYAlignment.Top
                 dLbl.TextWrapped = true
-                dLbl.TextTruncate = Enum.TextTruncate.AtEnd
+                dLbl.TextTruncate = Enum.TextTruncate.None
                 dLbl.ClipsDescendants = true
                 RefColor("TextSub", dLbl, "TextColor3")
 
@@ -1325,7 +1325,7 @@ function zZzUILibrary:CreateWindow(options)
                 local regEntry = { id = NewRegId("tgl"), title = title, keybind = nil }
 
                 local f = Instance.new("TextButton")
-                f.Size = UDim2.new(1, 0, 0, 62)
+                f.Size = UDim2.new(1, 0, 0, 72)
                 f.BackgroundColor3 = C.Card
                 f.Text = ""; f.AutoButtonColor = false
                 f.BorderSizePixel = 0
@@ -1346,14 +1346,14 @@ function zZzUILibrary:CreateWindow(options)
                 RefColor("Text", tLbl, "TextColor3")
 
                 local dLbl = Instance.new("TextLabel", f)
-                dLbl.Size = UDim2.new(1, -125, 0, 26); dLbl.Position = UDim2.new(0, 12, 0, 29)
+                dLbl.Size = UDim2.new(1, -125, 0, 36); dLbl.Position = UDim2.new(0, 12, 0, 29)
                 dLbl.BackgroundTransparency = 1; dLbl.Text = desc or ""
                 dLbl.TextColor3 = C.TextSub; dLbl.Font = Enum.Font.Gotham
                 dLbl.TextSize = 10
                 dLbl.TextXAlignment = Enum.TextXAlignment.Left
                 dLbl.TextYAlignment = Enum.TextYAlignment.Top
                 dLbl.TextWrapped = true
-                dLbl.TextTruncate = Enum.TextTruncate.AtEnd
+                dLbl.TextTruncate = Enum.TextTruncate.None
                 dLbl.ClipsDescendants = true
                 RefColor("TextSub", dLbl, "TextColor3")
 
