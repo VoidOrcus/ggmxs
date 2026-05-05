@@ -22,6 +22,9 @@ function zZzUILibrary:CreateWindow(options)
 
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name   = GUI_NAME
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = gethui and gethui() or CoreGui
 
     -- ═══════════════════════════════════════════════════════
@@ -66,6 +69,95 @@ function zZzUILibrary:CreateWindow(options)
         local b = tonumber(hex:sub(5,6),16) or 0
         return Color3.fromRGB(r,g,b)
     end
+
+    -- ═══════════════════════════════════════════════════════
+    -- 🔤 FONTS: troca ao vivo em Config > Colors > Fonts
+    -- ═══════════════════════════════════════════════════════
+    local function SafeFont(enumName, fallback)
+        local ok, font = pcall(function()
+            return Enum.Font[enumName]
+        end)
+        return (ok and font) or fallback or Enum.Font.Gotham
+    end
+
+    local FontOptions = {
+        {Name = "Gotham",      Font = SafeFont("Gotham")},
+        {Name = "GothamBold",  Font = SafeFont("GothamBold")},
+        {Name = "Montserrat",  Font = SafeFont("Montserrat", Enum.Font.Gotham)},
+        {Name = "Ubuntu",      Font = SafeFont("Ubuntu", Enum.Font.Gotham)},
+        {Name = "Roboto",      Font = SafeFont("Roboto", Enum.Font.Gotham)},
+        {Name = "SourceSans",  Font = SafeFont("SourceSans", Enum.Font.Gotham)},
+        {Name = "Arcade",      Font = SafeFont("Arcade", Enum.Font.Gotham)},
+        {Name = "SciFi",       Font = SafeFont("SciFi", Enum.Font.Gotham)},
+    }
+
+    local FontMap = {}
+    for _, data in ipairs(FontOptions) do
+        FontMap[data.Name:lower()] = data.Font
+    end
+
+    local SelectedFontName = "Gotham"
+    local UI_FONT = Enum.Font.Gotham
+    local FontButtonRefs = {}
+
+    local function ResolveFont(font)
+        if typeof(font) == "EnumItem" then
+            for _, data in ipairs(FontOptions) do
+                if data.Font == font then
+                    return data.Font, data.Name
+                end
+            end
+            return font, tostring(font):gsub("Enum.Font.", "")
+        elseif type(font) == "string" then
+            local resolved = FontMap[font:lower()]
+            if resolved then
+                for _, data in ipairs(FontOptions) do
+                    if data.Font == resolved then
+                        return resolved, data.Name
+                    end
+                end
+            end
+        end
+        return Enum.Font.Gotham, "Gotham"
+    end
+
+    local function ApplyFontToObject(obj)
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            obj.Font = UI_FONT
+        end
+    end
+
+    local function RefreshFontButtons()
+        for _, ref in ipairs(FontButtonRefs) do
+            local active = ref.Name == SelectedFontName
+            ref.Button.BackgroundColor3 = active and C.Primary or C.Card
+            ref.Button.TextColor3 = active and C.Text or C.TextSub
+            if ref.Stroke then
+                ref.Stroke.Color = active and C.Primary or C.Border
+                ref.Stroke.Transparency = active and 0.2 or 0.45
+            end
+        end
+    end
+
+    local function SetUIFont(font)
+        local resolved, niceName = ResolveFont(font)
+        UI_FONT = resolved
+        SelectedFontName = niceName
+        for _, obj in ipairs(ScreenGui:GetDescendants()) do
+            ApplyFontToObject(obj)
+        end
+        RefreshFontButtons()
+    end
+
+    ScreenGui.DescendantAdded:Connect(function(obj)
+        task.defer(function()
+            if obj and obj.Parent then
+                ApplyFontToObject(obj)
+            end
+        end)
+    end)
+
+    SetUIFont(options.Font or options.DefaultFont or "Gotham")
 
     -- ═══════════════════════════════════════════════════════
     -- 📋 REGISTRY
@@ -160,6 +252,9 @@ function zZzUILibrary:CreateWindow(options)
                         end
                     end
                 end
+                if cfg.font then
+                    SetUIFont(cfg.font)
+                end
             end)
 
             delBtn.MouseButton1Click:Connect(function()
@@ -177,7 +272,7 @@ function zZzUILibrary:CreateWindow(options)
 
     local function DoSave(name)
         if name == "" then return false end
-        local cfg = { toggles = {}, sliders = {}, keybinds = {}, palette = {} }
+        local cfg = { toggles = {}, sliders = {}, keybinds = {}, palette = {}, font = SelectedFontName }
         for _, t in ipairs(Registry.toggles) do
             cfg.toggles[t.id]  = t.getState()
             cfg.keybinds[t.id] = t.getKeybind()
@@ -218,10 +313,30 @@ function zZzUILibrary:CreateWindow(options)
         end
     end
 
-    local IsMobile = UIS.TouchEnabled and not UIS.MouseEnabled
-    local WIN_W  = IsMobile and 500 or 800
-    local WIN_H  = IsMobile and 300 or 480
-    local SIDE_W = IsMobile and 160 or 200
+    local Viewport = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1280, 720)
+
+    -- Responsivo via resolução: por padrão a janela usa 40% da tela do usuário.
+    -- Ex.: 1920x1080 => ~768x432. Pode alterar com options.Scale / WidthScale / HeightScale.
+    local WINDOW_SCALE_X = options.WidthScale or options.Scale or 0.40
+    local WINDOW_SCALE_Y = options.HeightScale or options.Scale or 0.40
+    local MIN_WIN_W = options.MinWidth or 320
+    local MIN_WIN_H = options.MinHeight or 260
+    local MAX_WIN_W = options.MaxWidth or math.huge
+    local MAX_WIN_H = options.MaxHeight or math.huge
+
+    local WIN_W, WIN_H, SIDE_W
+    local function CalculateResponsive(vp)
+        local safeW = math.max(320, vp.X - 20)
+        local safeH = math.max(260, vp.Y - 20)
+
+        local w = math.clamp(math.floor(vp.X * WINDOW_SCALE_X), MIN_WIN_W, math.min(MAX_WIN_W, safeW))
+        local h = math.clamp(math.floor(vp.Y * WINDOW_SCALE_Y), MIN_WIN_H, math.min(MAX_WIN_H, safeH))
+        local side = math.clamp(math.floor(w * 0.25), 112, 200)
+
+        return w, h, side
+    end
+
+    WIN_W, WIN_H, SIDE_W = CalculateResponsive(Viewport)
 
     local ICON_INACTIVE = Color3.fromRGB(90, 80, 110)
     local ICON_ACTIVE   = Color3.fromRGB(207, 115, 255)
@@ -479,6 +594,30 @@ function zZzUILibrary:CreateWindow(options)
         NumberSequenceKeypoint.new(0.6, 0.3),
         NumberSequenceKeypoint.new(1,   1),
     })
+
+    local function RecalculateResponsiveSize()
+        local vp = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Viewport
+        WIN_W, WIN_H, SIDE_W = CalculateResponsive(vp)
+
+        Main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
+        Main.Position = UDim2.new(0.5, -WIN_W/2, 0.5, -WIN_H/2)
+
+        Glow.Size = UDim2.new(0, WIN_W + 100, 0, WIN_H + 100)
+        Glow.Position = UDim2.new(0.5, -(WIN_W + 100)/2, 0.5, -(WIN_H + 100)/2)
+
+        SidebarBg.Size = UDim2.new(0, SIDE_W, 1, -65)
+        SidebarLine.Size = UDim2.new(0, 1, 1, -65)
+        SidebarLine.Position = UDim2.new(0, SIDE_W, 0, 65)
+
+        PagesContainer.Size = UDim2.new(1, -(SIDE_W + 15), 1, -65)
+        PagesContainer.Position = UDim2.new(0, SIDE_W + 15, 0, 65)
+    end
+
+    if workspace.CurrentCamera then
+        workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+            task.defer(RecalculateResponsiveSize)
+        end)
+    end
 
     local Tabs = {}
     local ActiveTab = nil
@@ -910,8 +1049,9 @@ function zZzUILibrary:CreateWindow(options)
                 elseif hasLeft then
                     -- ColorPicker sozinho não deve esticar até o conteúdo inteiro.
                     if subObj._onlyFixedHalfLeft then
+                        -- ColorPicker/Color Fill sozinho fica com meia largura e centralizado.
                         LeftCol.Size      = UDim2.new(0.5, -5, 0, 0)
-                        LeftCol.Position  = UDim2.new(0, 0, 0, 0)
+                        LeftCol.Position  = UDim2.new(0.25, 0, 0, 0)
                         L_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Left
                     else
                         LeftCol.Size      = UDim2.new(1, 0, 0, 0)
@@ -922,8 +1062,9 @@ function zZzUILibrary:CreateWindow(options)
                 elseif hasRight then
                     -- ColorPicker sozinho não deve esticar até o conteúdo inteiro.
                     if subObj._onlyFixedHalfRight then
+                        -- ColorPicker/Color Fill sozinho fica com meia largura e centralizado.
                         RightCol.Size     = UDim2.new(0.5, -5, 0, 0)
-                        RightCol.Position = UDim2.new(0.5, 5, 0, 0)
+                        RightCol.Position = UDim2.new(0.25, 0, 0, 0)
                         R_Lay.HorizontalAlignment = Enum.HorizontalAlignment.Left
                     else
                         RightCol.Size     = UDim2.new(1, 0, 0, 0)
@@ -2105,6 +2246,15 @@ function zZzUILibrary:CreateWindow(options)
         return self
     end
 
+    function Window:SetFont(font)
+        SetUIFont(font)
+        return self
+    end
+
+    function Window:GetFont()
+        return SelectedFontName, UI_FONT
+    end
+
     function Window:CreateCategory(name)
         CreateCategory(name)
         return self
@@ -2175,6 +2325,10 @@ function zZzUILibrary:CreateWindow(options)
                     end
                 end
             end
+        end
+
+        if cfg.font then
+            SetUIFont(cfg.font)
         end
 
         return true
@@ -2377,6 +2531,58 @@ function zZzUILibrary:CreateWindow(options)
 
         -- Esquerda: apenas Primary Color (removido Accent)
         -- Interface fixa: Primary Color removido/desativado.
+
+        -- Fonts: fica dentro de Config > Colors para trocar a fonte da UI inteira.
+        do
+            SubCfgColors._leftItems = SubCfgColors._leftItems + 1
+            SubCfgColors._rebalance()
+
+            local fontTitle = Instance.new("TextLabel", SubCfgColors.Left)
+            fontTitle.Size = UDim2.new(1, 0, 0, 22)
+            fontTitle.BackgroundTransparency = 1
+            fontTitle.Text = "FONTS"
+            fontTitle.TextColor3 = C.Primary
+            fontTitle.Font = UI_FONT
+            fontTitle.TextSize = 11
+            fontTitle.TextXAlignment = Enum.TextXAlignment.Left
+            RefColor("Primary", fontTitle, "TextColor3")
+
+            local fontGrid = Instance.new("Frame", SubCfgColors.Left)
+            fontGrid.Size = UDim2.new(1, 0, 0, 102)
+            fontGrid.BackgroundTransparency = 1
+
+            local grid = Instance.new("UIGridLayout", fontGrid)
+            grid.CellSize = UDim2.new(0.5, -4, 0, 30)
+            grid.CellPadding = UDim2.new(0, 8, 0, 6)
+            grid.SortOrder = Enum.SortOrder.LayoutOrder
+
+            for i, data in ipairs(FontOptions) do
+                local btn = Instance.new("TextButton", fontGrid)
+                btn.Size = UDim2.new(0, 0, 0, 30)
+                btn.BackgroundColor3 = C.Card
+                btn.Text = data.Name
+                btn.TextColor3 = C.TextSub
+                btn.Font = data.Font
+                btn.TextSize = 10
+                btn.AutoButtonColor = false
+                btn.BorderSizePixel = 0
+                btn.LayoutOrder = i
+                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 7)
+
+                local st = Instance.new("UIStroke", btn)
+                st.Color = C.Border
+                st.Transparency = 0.45
+                RefColor("Border", st, "Color")
+
+                table.insert(FontButtonRefs, {Name = data.Name, Button = btn, Stroke = st})
+
+                btn.MouseButton1Click:Connect(function()
+                    SetUIFont(data.Name)
+                end)
+            end
+
+            RefreshFontButtons()
+        end
 
         -- Direita: apenas MainBG, HeaderBG, Border/Lines, Subtitle
         do
